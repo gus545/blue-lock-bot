@@ -1,0 +1,13 @@
+test_results.html
+test_schedule_playoffs.html
+test_schedule_regular.html
+test_schedule.html
+test.html
+
+.env
+
+__pycache__/*
+node_modules/*
+http_cache.sqlite
+scraper_state.json
+.vscode/settings.json

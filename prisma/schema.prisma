@@ -1,0 +1,53 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-py"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Game {
+  id Int @id @default(autoincrement())
+  gameTime DateTime
+  location String?
+  status GameStatus @default(SCHEDULED)
+  homeTeam Team @relation("HomeGames", fields: [homeTeamId], references: [id])
+  homeTeamId Int
+  homeScore Int?
+  awayTeam Team @relation("AwayGames", fields: [awayTeamId], references: [id])
+  awayTeamId Int
+  awayScore Int?
+}
+
+model Team {
+  id Int @id @default(autoincrement())
+  name String @unique
+  players Player[]
+  primaryColor String
+  secondaryColor String
+  div Int
+
+  homeGames Game[] @relation("HomeGames")
+  awayGames Game[] @relation("AwayGames")
+}
+
+model Player {
+  id Int @id @default(autoincrement())
+  name String
+  level Int
+  team Team @relation(fields: [teamId], references: [id])
+  teamId Int
+}
+
+enum GameStatus{
+  SCHEDULED
+  LIVE
+  FINISHED
+}
