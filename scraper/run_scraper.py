@@ -65,7 +65,7 @@ def main():
     # Check if pages have been pulled recently
     state = load_state()
     last_run = state.get("last_run")
-    if not last_run or (datetime.now() - datetime.fromisoformat(last_run)).days > 0:
+    if not last_run or (datetime.now() - datetime.fromisoformat(last_run)).days > 0 or True:
         session = requests.Session()
         session.headers.update(headers)
         
@@ -96,8 +96,11 @@ def main():
         print(requests.post('http://127.0.0.1:8000/games', json.dumps(r)).content)
     
     for s in schedule:
-        print(s)
         print(requests.post('http://127.0.0.1:8000/games', json.dumps(s)).content)
+
+    for team in league_table:
+        print(requests.post('http://127.0.0.1:8000/teams', json.dumps(team)).content)
+
 
 
 

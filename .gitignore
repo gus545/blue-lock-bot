@@ -11,3 +11,5 @@ node_modules/*
 http_cache.sqlite
 scraper_state.json
 .vscode/settings.json
+app/__pycache__/main.cpython-314.pyc
+.gitignore

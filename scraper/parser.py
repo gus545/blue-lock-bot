@@ -201,7 +201,7 @@ class LeagueParser:
         for div in div_containers:
             div_division_h3 = div.find("h3")
             div_division = div_division_h3.text.strip() if div_division_h3 else UNKNOWN_STR
-
+            div_division = int(re.search(r'\d+', div_division).group()) if re.search(r'\d+', div_division) else ERROR_INT
             table_body = div.find("tbody", class_="ui-datatable-data")
             if not table_body:
                 print(f"Skipping division '{div_division}': No table body found.")
@@ -227,6 +227,10 @@ class LeagueParser:
                         return int(cell.text.strip())
                     except ValueError:
                         return ERROR_INT
+                
+                # Extract team color
+                primary_color, secondary_color = LeagueParser.extract_team_colors(cells[0])
+
 
                 league_table.append({
                     "name": safe_get_text(cells[1]),
@@ -238,7 +242,9 @@ class LeagueParser:
                     "ga": safe_get_int(cells[7]),
                     "gd": safe_get_int(cells[8]),
                     "pts": safe_get_int(cells[9]),
-                    "division": div_division
+                    "div": div_division,
+                    "primaryColor": primary_color,
+                    "secondaryColor": secondary_color
                 })
 
         return league_table

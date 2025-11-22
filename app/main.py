@@ -32,9 +32,28 @@ async def create_team(team_data: TeamModel):
     """
     Creates a new team in the database.
     """
-  
-    new_team = await db.team.create(data=team_data.model_dump())
-    return new_team
+    
+    team = await db.team.upsert(
+        where={
+            "name": team_data.name
+            }
+            ,
+        data={
+            "create": {
+                "name": team_data.name,
+                "primaryColor": team_data.primaryColor,
+                "secondaryColor": team_data.secondaryColor,
+                "div": team_data.div
+            },
+            "update": {
+                "primaryColor": team_data.primaryColor,
+                "secondaryColor": team_data.secondaryColor,
+                "div": team_data.div
+            }
+        }
+    )
+
+    return team
 
 @app.get("/teams")
 async def get_teams():
@@ -108,6 +127,8 @@ async def create_game(game_data: GameModel):
         "status": current_status
     })
 
+    await calculate_stats(home_team.id)
+    await calculate_stats(away_team.id)
     return new_game
 @app.get("/games")
 async def get_games():
@@ -115,3 +136,70 @@ async def get_games():
     Retrieves all games from the database.
     """
     return await db.game.find_many()
+
+async def calculate_stats(team_id: int):
+
+    # Calculate gf, ga, gd, w, l, d, points, gp
+
+    gf = 0
+    ga = 0
+    gd = 0
+    w = 0
+    l = 0
+    d = 0
+    points = 0
+    gp = 0
+
+    for game in await db.game.find_many(where={"AND": [{"status": GameStatus.FINISHED}, {"OR": [{"homeTeamId": team_id}, {"awayTeamId": team_id}]}]}):
+        gp += 1
+        if game.homeTeamId == team_id:
+            gf += game.homeScore
+            ga += game.awayScore
+            if game.homeScore > game.awayScore:
+                w += 1
+                points += 3
+            elif game.homeScore < game.awayScore:
+                l += 1
+            else:
+                d += 1
+                points += 1
+        else: 
+            gf += game.awayScore
+            ga += game.homeScore
+            if game.awayScore > game.homeScore:
+                w += 1
+                points += 3
+            elif game.awayScore < game.homeScore:
+                l += 1
+            else:
+                d += 1
+                points += 1
+    gd = gf - ga
+    
+    stats = {
+        "gf": gf,
+        "ga": ga,
+        "gd": gd,
+        "w": w,
+        "l": l,
+        "d": d,
+        "points": points,
+        "gamesPlayed": gp
+    }
+
+    await db.team.update_many(where={"id": team_id}, data=stats)
+
+
+    return stats
+
+
+@app.post("/clear")
+async def clear_games():
+    """
+    Clears all games and teams from the database.
+    """
+   
+    await db.game.delete_many()
+    await db.team.delete_many()
+
+    return {"message": "Games and teams cleared"}

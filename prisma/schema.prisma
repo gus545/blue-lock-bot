@@ -34,6 +34,16 @@ model Team {
   secondaryColor String
   div Int
 
+  gf Int @default(0)
+  ga Int @default(0)
+  gd Int @default(0)
+  w Int @default(0)
+  l Int @default(0)
+  d Int @default(0)
+  points Int @default(0)
+  gamesPlayed Int @default(0)
+
+
   homeGames Game[] @relation("HomeGames")
   awayGames Game[] @relation("AwayGames")
 }
