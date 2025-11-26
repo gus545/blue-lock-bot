@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+
+  test_db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: test_db
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5433:5432" # Note the different port (5433) so it doesn't clash with dev
+  db:
+    image: postgres:15-alpine  # Using a specific, lightweight version
+    container_name: my_project_db
+    restart: unless-stopped
+    
+    # Environment variables for the new database
+    environment:
+      POSTGRES_USER: gus545
+      POSTGRES_PASSWORD: nerfCamille1!
+      POSTGRES_DB: leaguedb
+      
+    # Maps a local folder to the container's data folder
+    volumes:
+      - ./pgdata:/var/lib/postgresql/data
+      
+    # Makes the container's port 5432 available on your host machine's port 5432
+    ports:
+      - "5432:5432"
+  api:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --reload
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    env_file: .env
+  scraper:
+    command: python scraper/run_scraper.py 
+    depends_on:
+      - api
+      - db
+    env_file: .env
+volumes:
+  pgdata:

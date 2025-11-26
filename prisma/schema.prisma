@@ -24,6 +24,7 @@ model Game {
   awayTeam Team @relation("AwayGames", fields: [awayTeamId], references: [id])
   awayTeamId Int
   awayScore Int?
+  info String?
 }
 
 model Team {

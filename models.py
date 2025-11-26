@@ -2,7 +2,7 @@ from pydantic import BaseModel
 import datetime
 from typing import Optional
 
-class GameModel(BaseModel):
+class ScrapedGame(BaseModel):
     homeTeam: str
     awayTeam: str
     homeScore: Optional[int]

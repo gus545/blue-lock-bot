@@ -1,9 +1,10 @@
 from fastapi import FastAPI
 from prisma import Prisma
+from prisma.models import Game
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
-from typing import Optional
-from models import GameModel, TeamModel
+from typing import List, Optional
+from models import ScrapedGame, TeamModel
 from prisma.enums import GameStatus
 
 
@@ -62,8 +63,42 @@ async def get_teams():
     """
     return await db.team.find_many()
 
+@app.get("/teams/{team_id}")
+async def get_team(team_id: int):
+    """
+    Retrieves a specific team by ID from the database.
+    """
+    return await db.team.find_unique(where={"id": team_id})
+
+@app.put("/teams/{team_id}")
+async def update_team(team_id: int, team_data: TeamModel):
+    """
+    Updates an existing team in the database.
+    """
+    updated_team = await db.team.update(
+        where={"id": team_id},
+        data={
+            "name": team_data.name,
+            "primaryColor": team_data.primaryColor,
+            "secondaryColor": team_data.secondaryColor,
+            "div": team_data.div
+        }
+    )
+    return updated_team
+
+@app.delete("/teams/{team_id}")
+async def delete_team(team_id: int):
+    """
+    Deletes a team from the database.
+    """
+    deleted_team = await db.team.delete(where={"id": team_id})
+    return deleted_team
+
+
+
+
 @app.post("/games")
-async def create_game(game_data: GameModel):
+async def create_game(game_data: ScrapedGame):
     
     existing_game = await db.game.find_first(
         where={
@@ -124,11 +159,12 @@ async def create_game(game_data: GameModel):
         "awayScore": game_data.awayScore,
         "homeTeamId": home_team.id,
         "awayTeamId": away_team.id,
-        "status": current_status
+        "status": current_status,
+        "info": game_data.info
     })
 
-    await calculate_stats(home_team.id)
-    await calculate_stats(away_team.id)
+    await refresh_stats(home_team.id)
+    await refresh_stats(away_team.id)
     return new_game
 @app.get("/games")
 async def get_games():
@@ -137,9 +173,111 @@ async def get_games():
     """
     return await db.game.find_many()
 
-async def calculate_stats(team_id: int):
+@app.get("/games/{game_id}")
+async def get_game(game_id: int):
+    """
+    Retrieves a specific game by ID from the database.
+    """
+    return await db.game.find_unique(where={"id": game_id})
 
-    # Calculate gf, ga, gd, w, l, d, points, gp
+@app.put("/games/{game_id}")
+async def update_game(game_id: int, game_data: ScrapedGame):
+    """
+    Updates an existing game in the database.
+    """
+    existing_game = await db.game.find_unique(where={"id": game_id})
+
+    old_home_team_id = existing_game.homeTeamId
+    old_away_team_id = existing_game.awayTeamId
+
+    if not existing_game:
+        return {"message": "Game not found"}
+
+    home_team = await db.team.upsert(
+        where={
+            "name": game_data.homeTeam
+        },
+        data={
+            "create": {
+                "name": game_data.homeTeam,
+                "primaryColor": game_data.homeTeamPrimaryColor,
+                "secondaryColor": game_data.homeTeamSecondaryColor,
+                "div": 1
+            },
+            "update": {
+                "primaryColor": game_data.homeTeamPrimaryColor,
+                "secondaryColor": game_data.homeTeamSecondaryColor,
+            }
+        }
+    )
+
+    away_team = await db.team.upsert(
+        where={
+            "name": game_data.awayTeam
+        },
+        data={
+            "create": {
+                "name": game_data.awayTeam,
+                "primaryColor": game_data.awayTeamPrimaryColor,
+                "secondaryColor": game_data.awayTeamSecondaryColor,
+                "div": 1
+            },
+            "update": {
+                "primaryColor": game_data.awayTeamPrimaryColor,
+                "secondaryColor": game_data.awayTeamSecondaryColor
+            }
+        }
+    )  
+
+    updated_game = await db.game.update(
+        where={"id": game_id},
+        data={
+            "gameTime": game_data.gameTime,
+            "location": f"{game_data.fieldName} - Field {game_data.fieldNum}",
+            "homeScore": game_data.homeScore,
+            "awayScore": game_data.awayScore,
+            "homeTeamId": home_team.id,
+            "awayTeamId": away_team.id,
+            "info": game_data.info
+        }
+    )
+    await refresh_stats(old_home_team_id)
+    await refresh_stats(old_away_team_id)
+    await refresh_stats(home_team.id)
+    await refresh_stats(away_team.id)
+    return updated_game
+
+@app.delete("/games/{game_id}")
+async def delete_game(game_id: int):
+    """
+    Deletes a game from the database.
+    """
+    deleted_game = await db.game.delete(where={"id": game_id})
+    return deleted_game
+
+
+
+
+
+async def refresh_stats(team_id: int):
+
+    stats = calculate_stats(await db.game.find_many(where={"AND": [{"status": GameStatus.FINISHED}, {"OR": [{"homeTeamId": team_id}, {"awayTeamId": team_id}]}]}), team_id)
+    await db.team.update_many(where={"id": team_id}, data=stats)
+    return stats
+
+
+@app.post("/clear")
+async def clear_games():
+    """
+    Clears all games and teams from the database.
+    """
+   
+    await db.game.delete_many()
+    await db.team.delete_many()
+
+    return {"message": "Games and teams cleared"}
+
+def calculate_stats(games : List[Game], team_id: int):
 
     gf = 0
     ga = 0
@@ -150,7 +288,7 @@ async def calculate_stats(team_id: int):
     points = 0
     gp = 0
 
-    for game in await db.game.find_many(where={"AND": [{"status": GameStatus.FINISHED}, {"OR": [{"homeTeamId": team_id}, {"awayTeamId": team_id}]}]}):
+    for game in games:
         gp += 1
         if game.homeTeamId == team_id:
             gf += game.homeScore
@@ -187,19 +325,4 @@ async def calculate_stats(team_id: int):
         "gamesPlayed": gp
     }
 
-    await db.team.update_many(where={"id": team_id}, data=stats)
-
-
     return stats
-
-
-@app.post("/clear")
-async def clear_games():
-    """
-    Clears all games and teams from the database.
-    """
-   
-    await db.game.delete_many()
-    await db.team.delete_many()
-
-    return {"message": "Games and teams cleared"}
