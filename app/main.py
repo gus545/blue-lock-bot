@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from typing import List, Optional
 from models import ScrapedGame, TeamModel
 from prisma.enums import GameStatus
+from datetime import datetime
 
 
 
@@ -57,7 +58,7 @@ async def create_team(team_data: TeamModel):
     return team
 
 @app.get("/teams")
-async def get_teams():
+async def get_teams(limit: Optional[int] = None, time_gt: Optional[datetime] = None):
     """
     Retrieves all teams from the database.
     """
@@ -167,11 +168,41 @@ async def create_game(game_data: ScrapedGame):
     await refresh_stats(away_team.id)
     return new_game
 @app.get("/games")
-async def get_games():
+async def get_games(game_time_gt: Optional[str] = None, limit: Optional[int] = 100, sort_by: Optional[str] = None, team_id: Optional[int] = None):
     """
     Retrieves all games from the database.
     """
-    return await db.game.find_many()
+
+    sort_by_clause = {}
+    if sort_by:
+        sort_by_clause = {
+            sort_by: "asc"
+        }
+
+    where_clause={}
+    if game_time_gt:
+        game_time_gt = datetime.fromisoformat(game_time_gt.replace('Z', '+00:00'))
+
+        where_clause = {
+            "gameTime": {
+                "gt": game_time_gt
+            },
+            "OR": [
+                {"homeTeamId": team_id},
+                {"awayTeamId": team_id}
+            ]
+        }
+
+
+
+    games = await db.game.find_many(
+        where=where_clause,
+        take=limit,
+        order=sort_by_clause
+    )
+
+    return games
+
 
 @app.get("/games/{game_id}")
 async def get_game(game_id: int):
