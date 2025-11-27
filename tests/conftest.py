@@ -4,7 +4,7 @@ import pytest_asyncio
 import subprocess
 import os
 from prisma import Prisma
-from app.main import app
+from backend.main import app
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 from httpx import AsyncClient, ASGITransport 

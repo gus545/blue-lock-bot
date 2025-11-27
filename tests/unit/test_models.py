@@ -1,6 +1,6 @@
 import pytest
 from prisma.models import Game
-from app.main import calculate_stats
+from backend.main import calculate_stats
 
 
 @pytest.fixture

@@ -1,0 +1,5 @@
+beautifulsoup4
+requests
+requests-cache
+python-dotenv
+pytz

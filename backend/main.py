@@ -183,22 +183,29 @@ async def get_games(game_time_gt: Optional[str] = None, limit: Optional[int] = 1
     if game_time_gt:
         game_time_gt = datetime.fromisoformat(game_time_gt.replace('Z', '+00:00'))
 
-        where_clause = {
-            "gameTime": {
-                "gt": game_time_gt
-            },
-            "OR": [
-                {"homeTeamId": team_id},
-                {"awayTeamId": team_id}
-            ]
+        where_clause['gameTime'] = {
+            'gt': game_time_gt
         }
 
+    if team_id:
+        where_clause['OR'] = [
+            {
+                'homeTeamId': team_id
+            },
+            {
+                'awayTeamId': team_id
+            }
+        ]
 
 
     games = await db.game.find_many(
         where=where_clause,
         take=limit,
-        order=sort_by_clause
+        order=sort_by_clause,
+        include={
+            "homeTeam": True,
+            "awayTeam": True
+        }
     )
 
     return games

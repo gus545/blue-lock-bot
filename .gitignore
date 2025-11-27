@@ -5,6 +5,7 @@ test_schedule.html
 test.html
 
 .env
+*.pyc
 
 __pycache__/*
 node_modules/*
@@ -16,12 +17,6 @@ app/__pycache__/main.cpython-314.pyc
 pytest.ini
 app/__pycache__/main.cpython-310.pyc
 app/__pycache__/test_main.cpython-310-pytest-9.0.1.pyc
-prisma/migrations/migration_lock.toml
-prisma/migrations/20251113205814_v1/migration.sql
-prisma/migrations/20251117194140_v2/migration.sql
-prisma/migrations/20251120104723_/migration.sql
-prisma/migrations/20251123002554_v4/migration.sql
-prisma/migrations/20251125143202_add_game_info_field/migration.sql
 scraper/__pycache__/parser.cpython-310.pyc
 tests/pytest.ini
 tests/__pycache__/conftest.cpython-310-pytest-9.0.1.pyc
