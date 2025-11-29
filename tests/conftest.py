@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 from httpx import AsyncClient, ASGITransport 
 
 # 1. Configuration
-TEST_DB_URL = "postgresql://test_user:test_password@localhost:5431/test_db"
+TEST_DB_URL = os.getenv("TEST_DB_URL")
 
 # 2. DATABASE SETUP (Runs ONCE per session)
 # This just pushes the schema. It does NOT return a connection.
@@ -20,13 +20,23 @@ def setup_test_database():
     # We set the environment variable specifically for this command
     env = os.environ.copy()
     env["DATABASE_URL"] = TEST_DB_URL
+    env["DB_VOLUME"] = ""
     
+    # Inside your test setup
+    subprocess.run(["docker-compose", "--profile", "test", "up", "-d"])
+    print("--- Docker Compose Started ---")
+
     subprocess.run(
         ["prisma", "db", "push", "--skip-generate"], 
         env=env,
         check=True
     )
+
     print("--- Schema Push Complete ---")
+
+    yield
+
+    subprocess.run(["docker-compose", "down"], env=env, check=True)
 
 # 3. DATABASE CONNECTION (Runs PER TEST)
 # We changed scope to "function" (default) to match the test loop.
@@ -42,7 +52,7 @@ async def db_integration():
     await client.team.delete_many()
 
     # Patch the global 'db' in main.py with this new client
-    with patch("app.main.db", client):
+    with patch("backend.main.db", client):
         yield client
 
     # Teardown
