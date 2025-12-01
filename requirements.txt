@@ -1,0 +1,11 @@
+beautifulsoup4
+requests
+requests-cache
+python-dotenv
+pytz
+discord
+aiohttp
+fastapi
+prisma
+uvicorn[standard]
+pydantic

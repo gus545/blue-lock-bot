@@ -1,4 +1,0 @@
-fastapi
-prisma
-uvicorn[standard]
-pydantic
