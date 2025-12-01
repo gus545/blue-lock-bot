@@ -62,15 +62,15 @@ async def test_calculate_stats_integration(client_integration, db_integration):
     t2 = await db_integration.team.create(data={"name": "B", "div": 1, "primaryColor":"x", "secondaryColor":"y"})
 
     payload = {
-        "gameTime": "2025-01-01T12:00:00Z",
-        "fieldName": "Park",
-        "fieldNum": 1,
-        "homeTeam": "A", # Logic relies on names, not IDs
-        "homeTeamPrimaryColor": "x", "homeTeamSecondaryColor": "y",
-        "awayTeam": "B",
-        "awayTeamPrimaryColor": "x", "awayTeamSecondaryColor": "y",
-        "homeScore": 5,
-        "awayScore": 0,
+        "game_time": "2025-01-01T12:00:00Z",
+        "field_name": "Park",
+        "field_num": 1,
+        "home_team": "A", # Logic relies on names, not IDs
+        "home_team_primary_color": "x", "home_team_secondary_color": "y",
+        "away_team": "B",
+        "away_team_primary_color": "x", "away_team_secondary_color": "y",
+        "home_score": 5,
+        "away_score": 0,
         "info": "Test Game"
     }
     

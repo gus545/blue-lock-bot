@@ -1,4 +1,6 @@
 import pytest
+from datetime import datetime
+
 
 @pytest.mark.asyncio
 async def test_crud_game(db_integration, client_integration):
@@ -6,17 +8,17 @@ async def test_crud_game(db_integration, client_integration):
     # Create game
 
     new_game = {
-        "homeTeam": "Home Team",
-        "awayTeam": "Away Team",
-        "homeScore": 1,
-        "awayScore": 0,
-        "homeTeamPrimaryColor": "Red",
-        "homeTeamSecondaryColor": "Black",
-        "awayTeamPrimaryColor": "Red",
-        "awayTeamSecondaryColor": "Black",
-        "fieldName": "Park",
-        "fieldNum": 1,
-        "gameTime": "2025-01-01T12:00:00Z",
+        "home_team": "Home Team",
+        "away_team": "Away Team",
+        "home_score": 1,
+        "away_score": 0,
+        "home_team_primary_color": "Red",
+        "home_team_secondary_color": "Black",
+        "away_team_primary_color": "Red",
+        "away_team_secondary_color": "Black",
+        "field_name": "Park",
+        "field_num": 1,
+        "game_time": "2025-01-01T12:00:00Z",
         "info": "Test Game"
     }
     response = await client_integration.post("/games", json=new_game)
@@ -50,17 +52,17 @@ async def test_crud_game(db_integration, client_integration):
     # Update game
 
     updated_game = {
-        "homeTeam": "Updated game",
-        "awayTeam": "Updated game",
-        "homeScore": 2,
-        "awayScore": 1,
-        "homeTeamPrimaryColor": "Blue",
-        "homeTeamSecondaryColor": "White",
-        "awayTeamPrimaryColor": "Blue",
-        "awayTeamSecondaryColor": "White",
-        "fieldName": "Park",
-        "fieldNum": 1,
-        "gameTime": "2025-01-01T12:00:00Z",
+        "home_team": "Updated game",
+        "away_team": "Updated game",
+        "home_score": 2,
+        "away_score": 1,
+        "home_team_primary_color": "Blue",
+        "home_team_secondary_color": "White",
+        "away_team_primary_color": "Blue",
+        "away_team_secondary_color": "White",
+        "field_name": "Park",
+        "field_num": 1,
+        "game_time": "2025-01-01T12:00:00Z",
         "info": "Test Game"
     }
 
@@ -80,4 +82,59 @@ async def test_crud_game(db_integration, client_integration):
     assert response.status_code == 200
     assert response.json()["id"] == db_entry.id
     assert await db_integration.game.find_unique(where={"id": response.json()["id"]}) is None
-    assert await db_integration.game.find_many() == []
+
+@pytest.mark.asyncio
+async def test_query_games(client_integration, db_integration, sample_games_data):
+    for game in sample_games_data:
+        response = await client_integration.post("/games", json=game.model_dump(mode="json"))
+        assert response.status_code == 200
+
+
+    # Test generic query
+    response = await client_integration.get("/games")
+    assert response.status_code == 200
+    assert len(response.json()) == len(sample_games_data)
+
+    # Test limit
+    response = await client_integration.get("/games?limit=2")
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+    # Test sort_by
+    response = await client_integration.get("/games?sort_by=gameTime")
+    assert response.status_code == 200
+    assert response.json()[0]["gameTime"] <= response.json()[1]["gameTime"] 
+    response = await client_integration.get("/games?sort_by=-gameTime")
+    assert response.status_code == 200
+    assert response.json()[0]["gameTime"] >= response.json()[1]["gameTime"]
+
+    # Test game_time_gt
+    response = await client_integration.get(f"/games?game_time_gt={datetime.now().isoformat()}")
+    assert response.status_code == 200
+    assert all(game["gameTime"] > datetime.now().isoformat() for game in response.json())
+
+    # Test team_id 
+    team_a = await db_integration.team.find_first(where={"name": "Team A"})
+    team_b = await db_integration.team.find_first(where={"name": "Team B"})
+    assert team_a is not None
+    assert team_b is not None
+
+
+    response = await client_integration.get(f"/games?team_id={team_a.id}")
+    assert response.status_code == 200
+    assert all(game["homeTeamId"] == team_a.id or game["awayTeamId"] == team_a.id for game in response.json())
+
+    response = await client_integration.get(f"/games?team_id={team_b.id}")
+    assert response.status_code == 200
+    assert all(game["homeTeamId"] == team_b.id or game["awayTeamId"] == team_b.id for game in response.json())
+
+    # Test bad query
+    assert (await client_integration.get("/games?bad_param=good_value")).status_code == 200
+    assert (await client_integration.get("/games?limit=bad_value")).status_code == 422
+    assert (await client_integration.get("/games?limit=-1")).status_code == 400
+    assert (await client_integration.get("/games?sort_by=bad_value")).status_code == 400
+
+
+    # Test game_time_gt
+    assert (await client_integration.get(f"/games?game_time_gt={datetime.now().isoformat()}")).status_code == 200
+    assert all(game["gameTime"] > datetime.now().isoformat() for game in (await client_integration.get(f"/games?game_time_gt={datetime.now().isoformat()}")).json())

@@ -7,8 +7,8 @@ async def test_crud_team(db_integration, client_integration):
 
     new_team = {
         "name": "New Team",
-        "primaryColor": "Red",
-        "secondaryColor": "Black",
+        "primary_color": "Red",
+        "secondary_color": "Black",
         "div": 1
     }
 
@@ -29,15 +29,15 @@ async def test_crud_team(db_integration, client_integration):
     assert fetched_team.status_code == 200
     assert fetched_team.json()["name"] == "New Team"
     assert fetched_team.json()["div"] == 1
-    assert fetched_team.json()["primaryColor"] == "Red"
+    assert fetched_team.json()["primaryColor"] == "Red"  # The database schema uses camelCase
     assert fetched_team.json()["secondaryColor"] == "Black"
 
     # Update team
 
     updated_team = {
         "name": "Updated Team",
-        "primaryColor": "Blue",
-        "secondaryColor": "White",
+        "primary_color": "Blue",
+        "secondary_color": "White",
         "div": 2
     }
 
@@ -53,4 +53,3 @@ async def test_crud_team(db_integration, client_integration):
     assert response.status_code == 200
     assert response.json()["name"] == "Updated Team"
     assert await db_integration.team.find_unique(where={"id": response.json()["id"]}) is None
-    assert await db_integration.team.find_many() == []

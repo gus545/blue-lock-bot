@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from prisma import Prisma
 from prisma.models import Game
 from pydantic import BaseModel
@@ -43,13 +43,13 @@ async def create_team(team_data: TeamModel):
         data={
             "create": {
                 "name": team_data.name,
-                "primaryColor": team_data.primaryColor,
-                "secondaryColor": team_data.secondaryColor,
+                "primaryColor": team_data.primary_color,
+                "secondaryColor": team_data.secondary_color,
                 "div": team_data.div
             },
             "update": {
-                "primaryColor": team_data.primaryColor,
-                "secondaryColor": team_data.secondaryColor,
+                "primaryColor": team_data.primary_color,
+                "secondaryColor": team_data.secondary_color,
                 "div": team_data.div
             }
         }
@@ -80,8 +80,8 @@ async def update_team(team_id: int, team_data: TeamModel):
         where={"id": team_id},
         data={
             "name": team_data.name,
-            "primaryColor": team_data.primaryColor,
-            "secondaryColor": team_data.secondaryColor,
+            "primaryColor": team_data.primary_color,
+            "secondaryColor": team_data.secondary_color,
             "div": team_data.div
         }
     )
@@ -100,11 +100,11 @@ async def delete_team(team_id: int):
 
 @app.post("/games")
 async def create_game(game_data: ScrapedGame):
-    
+
     existing_game = await db.game.find_first(
         where={
-            "gameTime": game_data.gameTime,
-            "location": f"{game_data.fieldName} - Field {game_data.fieldNum}",
+            "gameTime": game_data.game_time,
+            "location": f"{game_data.field_name} - Field {game_data.field_num}",
         }
     )
 
@@ -113,36 +113,36 @@ async def create_game(game_data: ScrapedGame):
 
     home_team = await db.team.upsert(
         where={
-            "name": game_data.homeTeam
+            "name": game_data.home_team
         },
         data={
             "create": {
-                "name": game_data.homeTeam,
-                "primaryColor": game_data.homeTeamPrimaryColor,
-                "secondaryColor": game_data.homeTeamSecondaryColor,
+                "name": game_data.home_team,
+                "primaryColor": game_data.home_team_primary_color,
+                "secondaryColor": game_data.home_team_secondary_color,
                 "div": 1
             },
             "update": {
-                "primaryColor": game_data.homeTeamPrimaryColor,
-                "secondaryColor": game_data.homeTeamSecondaryColor,
+                "primaryColor": game_data.home_team_primary_color,
+                "secondaryColor": game_data.home_team_secondary_color,
             }
         }
     )
 
     away_team = await db.team.upsert(
         where={
-            "name": game_data.awayTeam
+            "name": game_data.away_team
         },
         data={
             "create": {
-                "name": game_data.awayTeam,
-                "primaryColor": game_data.awayTeamPrimaryColor,
-                "secondaryColor": game_data.awayTeamSecondaryColor,
+                "name": game_data.away_team,
+                "primaryColor": game_data.away_team_primary_color,
+                "secondaryColor": game_data.away_team_secondary_color,
                 "div": 0
             },
             "update": {
-                "primaryColor": game_data.awayTeamPrimaryColor,
-                "secondaryColor": game_data.awayTeamSecondaryColor,
+                "primaryColor": game_data.away_team_primary_color,
+                "secondaryColor": game_data.away_team_secondary_color,
             }
         }
     )
@@ -150,14 +150,14 @@ async def create_game(game_data: ScrapedGame):
 
     current_status = GameStatus.SCHEDULED
 
-    if game_data.homeScore is not None and game_data.awayScore is not None:
+    if game_data.home_score is not None and game_data.away_score is not None:
         current_status = GameStatus.FINISHED
 
     new_game = await db.game.create(data={
-        "gameTime": game_data.gameTime,
-        "location": f"{game_data.fieldName} - Field {game_data.fieldNum}",
-        "homeScore": game_data.homeScore,
-        "awayScore": game_data.awayScore,
+        "gameTime": game_data.game_time,
+        "location": f"{game_data.field_name} - Field {game_data.field_num}",
+        "homeScore": game_data.home_score,
+        "awayScore": game_data.away_score,
         "homeTeamId": home_team.id,
         "awayTeamId": away_team.id,
         "status": current_status,
@@ -168,16 +168,31 @@ async def create_game(game_data: ScrapedGame):
     await refresh_stats(away_team.id)
     return new_game
 @app.get("/games")
-async def get_games(game_time_gt: Optional[str] = None, limit: Optional[int] = 100, sort_by: Optional[str] = None, team_id: Optional[int] = None):
+async def get_games(game_time_gt: Optional[str] = None, limit: Optional[int] = 10, sort_by: Optional[str] = None, team_id: Optional[int] = None):
     """
     Retrieves all games from the database.
     """
 
+    if limit < 0:
+        raise HTTPException(status_code=400, detail="Limit cannot be negative")
+
+    if limit > 100:
+        limit = 100
+
+    
+        
     sort_by_clause = {}
     if sort_by:
-        sort_by_clause = {
-            sort_by: "asc"
-        }
+        if sort_by.startswith("-"):
+            direction = "desc"
+            field = sort_by[1:]
+        else:
+            direction = "asc"
+            field = sort_by
+        if field not in get_field_list(ScrapedGame):
+            raise HTTPException(status_code=400, detail="Invalid sort field")
+        sort_by_clause[field] = direction
+
 
     where_clause={}
     if game_time_gt:
@@ -233,36 +248,36 @@ async def update_game(game_id: int, game_data: ScrapedGame):
 
     home_team = await db.team.upsert(
         where={
-            "name": game_data.homeTeam
+            "name": game_data.home_team
         },
         data={
             "create": {
-                "name": game_data.homeTeam,
-                "primaryColor": game_data.homeTeamPrimaryColor,
-                "secondaryColor": game_data.homeTeamSecondaryColor,
+                "name": game_data.home_team,
+                "primaryColor": game_data.home_team_primary_color,
+                "secondaryColor": game_data.home_team_secondary_color,
                 "div": 1
             },
             "update": {
-                "primaryColor": game_data.homeTeamPrimaryColor,
-                "secondaryColor": game_data.homeTeamSecondaryColor,
+                "primaryColor": game_data.home_team_primary_color,
+                "secondaryColor": game_data.home_team_secondary_color,
             }
         }
     )
 
     away_team = await db.team.upsert(
         where={
-            "name": game_data.awayTeam
+            "name": game_data.away_team
         },
         data={
             "create": {
-                "name": game_data.awayTeam,
-                "primaryColor": game_data.awayTeamPrimaryColor,
-                "secondaryColor": game_data.awayTeamSecondaryColor,
+                "name": game_data.away_team,
+                "primaryColor": game_data.away_team_primary_color,
+                "secondaryColor": game_data.away_team_secondary_color,
                 "div": 1
             },
             "update": {
-                "primaryColor": game_data.awayTeamPrimaryColor,
-                "secondaryColor": game_data.awayTeamSecondaryColor
+                "primaryColor": game_data.away_team_primary_color,
+                "secondaryColor": game_data.away_team_secondary_color
             }
         }
     )  
@@ -270,10 +285,10 @@ async def update_game(game_id: int, game_data: ScrapedGame):
     updated_game = await db.game.update(
         where={"id": game_id},
         data={
-            "gameTime": game_data.gameTime,
-            "location": f"{game_data.fieldName} - Field {game_data.fieldNum}",
-            "homeScore": game_data.homeScore,
-            "awayScore": game_data.awayScore,
+            "gameTime": game_data.game_time,
+            "location": f"{game_data.field_name} - Field {game_data.field_num}",
+            "homeScore": game_data.home_score,
+            "awayScore": game_data.away_score,
             "homeTeamId": home_team.id,
             "awayTeamId": away_team.id,
             "info": game_data.info
@@ -325,7 +340,7 @@ def calculate_stats(games : List[Game], team_id: int):
     d = 0
     points = 0
     gp = 0
-
+    
     for game in games:
         gp += 1
         if game.homeTeamId == team_id:
@@ -364,3 +379,15 @@ def calculate_stats(games : List[Game], team_id: int):
     }
 
     return stats
+
+def get_field_list(model : type[BaseModel]):
+    # Returns list of aliases and field names in model
+
+    fields = []
+
+    for name,field in model.model_fields.items():
+        fields.append(name)
+        if field.alias:
+            fields.append(field.alias)
+
+    return fields

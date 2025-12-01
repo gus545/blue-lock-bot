@@ -96,17 +96,17 @@ class LeagueParser:
                 gameDate = LeagueParser.date_and_time_to_iso(table_date_str, time_text)
 
                 results.append({
-                    "homeTeam": home_team_name,
-                    "homeTeamPrimaryColor": home_team_color_1,
-                    "homeTeamSecondaryColor": home_team_color_2,
-                    "homeScore": home_team_score,
-                    "awayTeam": away_team_name,
-                    "awayTeamPrimaryColor": away_team_color_1,
-                    "awayTeamSecondaryColor": away_team_color_2,
-                    "awayScore": away_team_score,
-                    "fieldName": location,
-                    "fieldNum": int(field),
-                    "gameTime": gameDate,
+                    "home_team": home_team_name,
+                    "home_team_primary_color": home_team_color_1,
+                    "home_team_secondary_color": home_team_color_2,
+                    "home_score": home_team_score,
+                    "away_team": away_team_name,
+                    "away_team_primary_color": away_team_color_1,
+                    "away_team_secondary_color": away_team_color_2,
+                    "away_score": away_team_score,
+                    "field_name": location,
+                    "field_num": int(field),
+                    "game_time": gameDate,
                     "info": extra_info
                 })
 
@@ -168,18 +168,18 @@ class LeagueParser:
             gameDate = LeagueParser.date_and_time_to_iso(date_text, time_text)
 
             fixtures.append({
-                "homeTeam": home_team_name,
-                "homeTeamPrimaryColor": home_team_color_1,
-                "homeTeamSecondaryColor": home_team_color_2,
-                "homeScore": None,
-                "awayScore": None,
-                "awayTeam": away_team_name,
-                "awayTeamPrimaryColor": away_team_color_1,
-                "awayTeamSecondaryColor": away_team_color_2,
+                "home_team": home_team_name,
+                "home_team_primary_color": home_team_color_1,
+                "home_team_secondary_color": home_team_color_2,
+                "home_score": None,
+                "away_score": None,
+                "away_team": away_team_name,
+                "away_team_primary_color": away_team_color_1,
+                "away_team_secondary_color": away_team_color_2,
                 "info": extra_info,
-                "fieldName": field_name,
-                "fieldNum": field_number_str,
-                "gameTime": gameDate
+                "field_name": field_name,
+                "field_num": field_number_str,
+                "game_time": gameDate
             })
 
         return fixtures
@@ -234,17 +234,17 @@ class LeagueParser:
 
                 league_table.append({
                     "name": safe_get_text(cells[1]),
-                    "gp": safe_get_int(cells[2]),
-                    "w": safe_get_int(cells[3]),
-                    "l": safe_get_int(cells[4]),
-                    "d": safe_get_int(cells[5]),
-                    "gf": safe_get_int(cells[6]),
-                    "ga": safe_get_int(cells[7]),
-                    "gd": safe_get_int(cells[8]),
-                    "pts": safe_get_int(cells[9]),
+                    "games_played": safe_get_int(cells[2]),
+                    "wins": safe_get_int(cells[3]),
+                    "losses": safe_get_int(cells[4]),
+                    "draws": safe_get_int(cells[5]),
+                    "goals_for": safe_get_int(cells[6]),
+                    "goals_against": safe_get_int(cells[7]),
+                    "goal_difference": safe_get_int(cells[8]),
+                    "points": safe_get_int(cells[9]),
                     "div": div_division,
-                    "primaryColor": primary_color,
-                    "secondaryColor": secondary_color
+                    "primary_color": primary_color,
+                    "secondary_color": secondary_color
                 })
 
         return league_table

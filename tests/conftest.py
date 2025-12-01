@@ -8,6 +8,18 @@ from backend.main import app
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 from httpx import AsyncClient, ASGITransport 
+from models import ScrapedGame
+from datetime import datetime, timedelta
+import pytz
+
+
+from datetime import datetime, timedelta, timezone
+
+# ✅ Define them as proper Timezone-Aware Datetime Objects
+PAST_DATE = (datetime.now(timezone.utc) - timedelta(days=5)).astimezone(pytz.timezone('US/Eastern')).isoformat()
+FUTURE_DATE = (datetime.now(timezone.utc) + timedelta(days=5)).astimezone(pytz.timezone('US/Eastern')).isoformat()
+
+
 
 # 1. Configuration
 TEST_DB_URL = os.getenv("TEST_DB_URL")
@@ -63,5 +75,94 @@ async def db_integration():
 async def client_integration():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
+
+@pytest.fixture
+def sample_games_data():
+    return [
+        ScrapedGame(
+            home_team="Team A",
+            away_team="Team B",
+            home_score=2,
+            away_score=1,
+            home_team_primary_color="#FF0000",
+            home_team_secondary_color="#00FF00",
+            away_team_primary_color="#0000FF",
+            away_team_secondary_color="#FFFF00",
+            field_name="Stadium",
+            game_time=PAST_DATE,
+            field_num=1,
+            info="Test Info"
+        ),
+        ScrapedGame(
+            home_team="Team C",
+            away_team="Team D",
+            home_score=3,
+            away_score=0,
+            home_team_primary_color="#00FFFF",
+            home_team_secondary_color="#FF00FF",
+            away_team_primary_color="#FF0000",
+            away_team_secondary_color="#00FF00",
+            field_name="Stadium",
+            field_num=2,
+            game_time=PAST_DATE,
+            info="Test Info"
+        ),
+        ScrapedGame(
+            home_team="Team E",
+            away_team="Team F",
+            home_score=1,
+            away_score=2,
+            home_team_primary_color="#FF00FF",
+            home_team_secondary_color="#00FFFF",
+            away_team_primary_color="#000000",
+            away_team_secondary_color="#FFFFFF",
+            field_name="Stadium",
+            field_num=3,
+            game_time=PAST_DATE,
+            info="Test Info"
+        ),
+        ScrapedGame(
+            home_team="Team C",
+            away_team="Team A",
+            home_score=2,
+            away_score=1,
+            home_team_primary_color="#00FFFF",
+            home_team_secondary_color="#FF00FF",
+            away_team_primary_color="#0000FF",
+            away_team_secondary_color="#FFFF00",
+            field_name="Stadium",
+            field_num=2,
+            game_time=FUTURE_DATE,
+            info="Test Info"
+        ),
+        ScrapedGame(
+            home_team="Team D",
+            away_team="Team B",
+            home_score=1,
+            away_score=2,
+            home_team_primary_color="#FF0000",
+            home_team_secondary_color="#00FF00",
+            away_team_primary_color="#0000FF",
+            away_team_secondary_color="#FF0000",
+            field_name="Stadium",
+            field_num=1,
+            game_time=FUTURE_DATE,
+            info="Test Info"
+        ),
+        ScrapedGame(
+            home_team="Team F",
+            away_team="Team E",
+            home_score=3,
+            away_score=0,
+            home_team_primary_color="#FF00FF",
+            home_team_secondary_color="#00FFFF",
+            away_team_primary_color="#000000",
+            away_team_secondary_color="#FFFFFF",
+            field_name="Stadium",
+            field_num=3,
+            game_time=FUTURE_DATE,
+            info="Test Info"
+        )
+    ]
 
     
