@@ -17,7 +17,7 @@ class Games(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @app_commands.command(name="latest", description="Get the latest scraped games")
+    @app_commands.command(name="latest", description="Get most recent completed games")
     async def latest_games(self, interaction: discord.Interaction, team_id: int = DEFAULT_TEAM_ID):
         await interaction.response.defer()
 
@@ -27,8 +27,21 @@ class Games(commands.Cog):
             await interaction.followup.send("No games found", ephemeral=True)
             return
 
-        embed = create_game_embed(games_data, title=f"Latest Games (Team ID: {team_id})")
+        embed = create_game_embed(games_data.get("games",None), title=f"Latest Games for {games_data.get('team',{}).get('name','N/A')} (Team ID: {team_id})")
         await interaction.followup.send(embed=embed)
+    
+    @app_commands.command(name="upcoming", description="Get upcoming games")
+    async def upcoming_games(self, interaction: discord.Interaction, team_id: int = DEFAULT_TEAM_ID):
+        await interaction.response.defer()
+
+        
+        games_data = await self.bot.api.get_upcoming_games(team_id=team_id)
+        if not games_data:
+            await interaction.followup.send("Team not found", ephemeral=True)
+            return
+        embed = create_game_embed(games_data.get("games",None), title=f"Upcoming games for {games_data.get('team',{}).get('name','N/A')} (Team ID: {team_id})")
+        await interaction.followup.send(embed=embed) 
+
 
 async def setup(bot):
     await bot.add_cog(Games(bot))

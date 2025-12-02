@@ -32,7 +32,7 @@ class LeagueBot(commands.Bot):
 
 
         # Load Cogs
-        initial_extensions = ['cogs.games']
+        initial_extensions = ['cogs.games', 'cogs.teams']
         for extension in initial_extensions:
             try:
                 await self.load_extension(extension)

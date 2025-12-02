@@ -49,3 +49,23 @@ def safe_get(data, key, default="N/A"):
     if val is None:
         return default
     return val
+
+def create_stat_embed(team_data, title="Stats"):
+    """
+    Takes a list of stats objects and returns a discord.Embed
+    """
+    if not team_data:
+        return discord.Embed(title=title, description="No stats found", color=discord.Color.red())
+    
+    embed = discord.Embed(title=title, color=discord.Color.green())
+    embed.add_field(name="Rank", value=team_data.get('rank', 'N/A'), inline=True)
+    embed.add_field(name="Points", value=team_data.get('points', 'N/A'), inline=True)
+    embed.add_field(name="Played", value=team_data.get('gamesPlayed', 'N/A'), inline=True)
+    embed.add_field(name="Wins", value=team_data.get('w', 'N/A'), inline=True)
+    embed.add_field(name="Losses", value=team_data.get('l', 'N/A'), inline=True)
+    embed.add_field(name="Ties", value=team_data.get('d', 'N/A'), inline=True)
+    embed.add_field(name="GF", value=team_data.get('gf', 'N/A'), inline=True)
+    embed.add_field(name="GA", value=team_data.get('ga', 'N/A'), inline=True)
+    embed.add_field(name="GD", value=team_data.get('gd', 'N/A'), inline=True)
+
+    return embed

@@ -1,5 +1,6 @@
 import aiohttp
 from typing import List, Optional, Dict, Any
+import datetime
 
 class LeagueClient:
     def __init__(self, session: aiohttp.ClientSession, base_url: str):
@@ -26,9 +27,43 @@ class LeagueClient:
         params = {
             "team_id": team_id,
             "limit": limit,
-            "sort_by": "gameTime"
+            "sort_by": "-gameTime",
+            "date": "-"+ datetime.datetime.now().isoformat()
         }
-        return await self._get("/games", params=params)
 
-    async def get_team_stats(self, team_id: int):
-        return await self._get(f"/teams/{team_id}/stats")
+
+        games = await self._get("/games", params=params)
+        team = await self.get_team_from_id(team_id=team_id)
+
+        return {
+            "team": team,
+            "games": games
+        }
+    
+    async def get_upcoming_games(self, team_id: int, limit: int = 3) -> List[Dict]:
+        
+        params = {
+            "team_id": team_id,
+            "limit": 3,
+            "sort_by": "gameTime",
+            "date": datetime.datetime.now().isoformat()
+        }
+
+        
+        team = await self.get_team_from_id(team_id=team_id)
+        if not team:
+            return None
+        
+        games = await self._get("/games", params=params)
+
+        return {
+            "team": team,
+            "games": games
+        }
+    
+    async def get_team_from_id(self, team_id: int):
+        if not team_id:
+            return None
+        
+        return await self._get(f"/teams/{team_id}")
+        
