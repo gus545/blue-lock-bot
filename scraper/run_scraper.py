@@ -92,14 +92,16 @@ def main():
     results = LeagueParser.parse_results_page(results_html)
 
     print("Sending game data...") 
+    for team in league_table:
+        print(requests.post('http://127.0.0.1:8000/teams', json.dumps(team)).content)
+        
     for r in results:
         print(requests.post('http://127.0.0.1:8000/games', json.dumps(r)).content)
     
     for s in schedule:
         print(requests.post('http://127.0.0.1:8000/games', json.dumps(s)).content)
 
-    for team in league_table:
-        print(requests.post('http://127.0.0.1:8000/teams', json.dumps(team)).content)
+
 
 
 
