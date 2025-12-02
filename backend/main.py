@@ -1,5 +1,5 @@
-from fastapi import FastAPI, HTTPException
-from prisma import Prisma
+from fastapi import FastAPI, HTTPException, Request
+from prisma import Prisma, models
 from prisma.models import Game
 from pydantic import BaseModel
 from contextlib import asynccontextmanager
@@ -28,6 +28,15 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    print(f"Incoming request: {request.method} {request.url}")
+    print("Headers:", request.headers)
+    # if request.method in ["POST", "PUT"]:
+        # body = await request.json()
+        # print("Body:", body)
+    response = await call_next(request)
+    return response
 
 @app.post("/teams")
 async def create_team(team_data: TeamModel):
@@ -58,7 +67,7 @@ async def create_team(team_data: TeamModel):
     return team
 
 @app.get("/teams")
-async def get_teams(limit: Optional[int] = None, time_gt: Optional[datetime] = None):
+async def get_teams():
     """
     Retrieves all teams from the database.
     """
@@ -168,7 +177,7 @@ async def create_game(game_data: ScrapedGame):
     await refresh_stats(away_team.id)
     return new_game
 @app.get("/games")
-async def get_games(game_time_gt: Optional[str] = None, limit: Optional[int] = 10, sort_by: Optional[str] = None, team_id: Optional[int] = None):
+async def get_games(date: Optional[str] = None, limit: Optional[int] = 10, sort_by: Optional[str] = None, team_id: Optional[int] = None):
     """
     Retrieves all games from the database.
     """
@@ -195,11 +204,15 @@ async def get_games(game_time_gt: Optional[str] = None, limit: Optional[int] = 1
 
 
     where_clause={}
-    if game_time_gt:
-        game_time_gt = datetime.fromisoformat(game_time_gt.replace('Z', '+00:00'))
-
+    if date:
+        if date[0] == '-':
+            bound = 'lt'
+            date = date[1:]
+        else:
+            bound = 'gt'
+        date = datetime.fromisoformat(date.replace('Z', '+00:00'))
         where_clause['gameTime'] = {
-            'gt': game_time_gt
+            bound : date
         }
 
     if team_id:
@@ -316,6 +329,7 @@ async def refresh_stats(team_id: int):
 
     stats = calculate_stats(await db.game.find_many(where={"AND": [{"status": GameStatus.FINISHED}, {"OR": [{"homeTeamId": team_id}, {"awayTeamId": team_id}]}]}), team_id)
     await db.team.update_many(where={"id": team_id}, data=stats)
+    await refresh_rank(team_id)
     return stats
 
 
@@ -391,3 +405,28 @@ def get_field_list(model : type[BaseModel]):
             fields.append(field.alias)
 
     return fields
+
+@app.post("/refresh_rank")
+async def refresh_rank(team_id: int):
+    """
+    Refreshes the rank of every team in division of given team.
+    """
+
+    team = await db.team.find_unique(where={"id": team_id})
+    
+    sorted_teams = await db.team.find_many(where={"div": team.div}, order=[{"points": "desc"}, {"gd": "desc"}, {"gf": "desc"}])
+
+    for i, team in enumerate(sorted_teams):
+        await db.team.update(where={"id": team.id}, data={"rank": i + 1})
+
+    return sorted_teams
+
+
+@app.delete("/wipe_database")
+async def wipe_database():
+    """
+    Deletes all games and teams from the database.
+    """
+    await db.game.delete_many()
+    await db.team.delete_many()
+    return {"message": "Database wiped"}

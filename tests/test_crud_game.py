@@ -108,10 +108,16 @@ async def test_query_games(client_integration, db_integration, sample_games_data
     assert response.status_code == 200
     assert response.json()[0]["gameTime"] >= response.json()[1]["gameTime"]
 
-    # Test game_time_gt
-    response = await client_integration.get(f"/games?game_time_gt={datetime.now().isoformat()}")
+    # Test date
+    response = await client_integration.get(f"/games?date={datetime.now().isoformat()}")
     assert response.status_code == 200
     assert all(game["gameTime"] > datetime.now().isoformat() for game in response.json())
+
+    response = await client_integration.get(f"/games?date=-{datetime.now().isoformat()}")
+    assert response.status_code == 200
+    assert all(game["gameTime"] < datetime.now().isoformat() for game in response.json())
+
+
 
     # Test team_id 
     team_a = await db_integration.team.find_first(where={"name": "Team A"})
@@ -135,6 +141,7 @@ async def test_query_games(client_integration, db_integration, sample_games_data
     assert (await client_integration.get("/games?sort_by=bad_value")).status_code == 400
 
 
-    # Test game_time_gt
-    assert (await client_integration.get(f"/games?game_time_gt={datetime.now().isoformat()}")).status_code == 200
-    assert all(game["gameTime"] > datetime.now().isoformat() for game in (await client_integration.get(f"/games?game_time_gt={datetime.now().isoformat()}")).json())
+    # Test date
+    assert (await client_integration.get(f"/games?date={datetime.now().isoformat()}")).status_code == 200
+    assert all(game["gameTime"] > datetime.now().isoformat() for game in (await client_integration.get(f"/games?date={datetime.now().isoformat()}")).json())
+

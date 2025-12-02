@@ -43,6 +43,7 @@ model Team {
   d Int @default(0)
   points Int @default(0)
   gamesPlayed Int @default(0)
+  rank Int @default(0)
 
 
   homeGames Game[] @relation("HomeGames")
