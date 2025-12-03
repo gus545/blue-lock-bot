@@ -54,10 +54,9 @@ class LeagueClient:
         team = await self.get_team_from_id(team_id=team_id)
         if not team:
             return None
-        print(team["id"])
         params = {
             "team_id": team["id"],
-            "limit": 3,
+            "limit": limit,
             "sort_by": "gameTime",
             "date": datetime.datetime.now().isoformat()
         }

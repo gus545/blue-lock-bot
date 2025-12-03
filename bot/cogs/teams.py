@@ -3,6 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 import os
 from utils.formatting import create_game_embed, create_stat_embed
+from main import LeagueBot
 
 
 
@@ -11,7 +12,7 @@ API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 
 class Teams(commands.Cog):
-    def __init__(self, bot):
+    def __init__(self, bot:  LeagueBot):
         self.bot = bot
 
     @app_commands.command(name="stats", description="Get stats for a team")
