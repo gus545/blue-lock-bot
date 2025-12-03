@@ -67,18 +67,16 @@ async def create_team(team_data: TeamModel):
     return team
 
 @app.get("/teams")
-async def get_teams():
+async def get_teams(name: Optional[str] = None, id: Optional[int] = None):
     """
     Retrieves all teams from the database.
     """
+    if name:
+        return await db.team.find_unique(where={"name": name})
+    if id:
+        return await db.team.find_unique(where={"id": id})
     return await db.team.find_many()
 
-@app.get("/teams/{team_id}")
-async def get_team(team_id: int):
-    """
-    Retrieves a specific team by ID from the database.
-    """
-    return await db.team.find_unique(where={"id": team_id})
 
 @app.put("/teams/{team_id}")
 async def update_team(team_id: int, team_data: TeamModel):

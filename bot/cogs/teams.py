@@ -8,11 +8,6 @@ from utils.formatting import create_game_embed, create_stat_embed
 
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
-try:
-    DEFAULT_TEAM_ID = int(os.getenv("TEAM_ID", "329"))
-except ValueError:
-    print("❌ Error: TEAM_ID in .env is not a number. Defaulting to 329.")
-    DEFAULT_TEAM_ID = 329
 
 
 class Teams(commands.Cog):
@@ -20,7 +15,7 @@ class Teams(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="stats", description="Get stats for a team")
-    async def stats(self, interaction: discord.Interaction, team_id: int = DEFAULT_TEAM_ID):
+    async def stats(self, interaction: discord.Interaction, team_id: int = None):
         await interaction.response.defer()
 
         team_data = await self.bot.api.get_team_from_id(team_id=team_id)

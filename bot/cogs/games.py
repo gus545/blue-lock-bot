@@ -6,11 +6,6 @@ from utils.formatting import create_game_embed
 
 
 API_URL = os.getenv("API_URL", "http://localhost:8000")
-try:
-    DEFAULT_TEAM_ID = int(os.getenv("TEAM_ID", "329"))
-except ValueError:
-    print("❌ Error: TEAM_ID in .env is not a number. Defaulting to 329.")
-    DEFAULT_TEAM_ID = 329
 
 
 class Games(commands.Cog):
@@ -18,7 +13,7 @@ class Games(commands.Cog):
         self.bot = bot
 
     @app_commands.command(name="latest", description="Get most recent completed games")
-    async def latest_games(self, interaction: discord.Interaction, team_id: int = DEFAULT_TEAM_ID):
+    async def latest_games(self, interaction: discord.Interaction, team_id: int = None):
         await interaction.response.defer()
 
         games_data = await self.bot.api.get_latest_games(team_id=team_id)
@@ -27,11 +22,11 @@ class Games(commands.Cog):
             await interaction.followup.send("No games found", ephemeral=True)
             return
 
-        embed = create_game_embed(games_data.get("games",None), title=f"Latest Games for {games_data.get('team',{}).get('name','N/A')} (Team ID: {team_id})")
+        embed = create_game_embed(games_data.get("games",None), title=f"Latest Games for {games_data.get('team',{}).get('name','N/A')} (Team ID: {games_data.get('team_id',None)})")
         await interaction.followup.send(embed=embed)
     
     @app_commands.command(name="upcoming", description="Get upcoming games")
-    async def upcoming_games(self, interaction: discord.Interaction, team_id: int = DEFAULT_TEAM_ID):
+    async def upcoming_games(self, interaction: discord.Interaction, team_id: int = None):
         await interaction.response.defer()
 
         
@@ -39,7 +34,7 @@ class Games(commands.Cog):
         if not games_data:
             await interaction.followup.send("Team not found", ephemeral=True)
             return
-        embed = create_game_embed(games_data.get("games",None), title=f"Upcoming games for {games_data.get('team',{}).get('name','N/A')} (Team ID: {team_id})")
+        embed = create_game_embed(games_data.get("games",None), title=f"Upcoming games for {games_data.get('team',{}).get('name','N/A')} (Team ID: {games_data.get('team_id',None)})")
         await interaction.followup.send(embed=embed) 
 
 
