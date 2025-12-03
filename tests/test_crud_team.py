@@ -25,7 +25,7 @@ async def test_crud_team(db_integration, client_integration):
 
     # Get team
 
-    fetched_team = await client_integration.get(f"/teams/{response.json()['id']}")
+    fetched_team = await client_integration.get(f"/teams?id={response.json()['id']}")
     assert fetched_team.status_code == 200
     assert fetched_team.json()["name"] == "New Team"
     assert fetched_team.json()["div"] == 1
